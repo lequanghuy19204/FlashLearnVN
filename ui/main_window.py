@@ -30,7 +30,7 @@ class VocabularyApp(QMainWindow):
         self.setGeometry(100, 100, 400, 300)  # Giảm chiều cao xuống 300
         
         # Sử dụng logo từ file nếu tồn tại, nếu không thì sử dụng qtawesome
-        logo_path = "ui/images/logo.png"
+        logo_path = "ui/images/logo.ico"
         if os.path.exists(logo_path):
             self.setWindowIcon(QIcon(logo_path))
         else:

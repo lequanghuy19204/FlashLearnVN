@@ -4,14 +4,18 @@ import shutil
 from PyQt5.QtWidgets import QMessageBox
 
 class DataManager:
-    def __init__(self, base_dir="data"):
-        self.base_dir = base_dir
-        self.categories_dir = os.path.join(base_dir, "categories")
-        self.ensure_data_dirs()
+    def __init__(self):
+        # Sử dụng thư mục dữ liệu từ biến môi trường hoặc mặc định
+        self.data_dir = os.environ.get('FLASHLEARNVN_DATA_DIR', 'data')
+        self.categories_dir = os.path.join(self.data_dir, "categories")
+        
+        # Đảm bảo thư mục tồn tại
+        os.makedirs(self.categories_dir, exist_ok=True)
+        os.makedirs(os.path.join(self.categories_dir, "Chung"), exist_ok=True)
     
     def ensure_data_dirs(self):
         """Đảm bảo các thư mục dữ liệu tồn tại"""
-        os.makedirs(self.base_dir, exist_ok=True)
+        os.makedirs(self.data_dir, exist_ok=True)
         os.makedirs(self.categories_dir, exist_ok=True)
     
     def get_category_path(self, category):
