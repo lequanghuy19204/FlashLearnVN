@@ -227,8 +227,11 @@ class VocabularyApp(QMainWindow):
         # Hướng dẫn
         instruction_label = QLabel(
             "Nhập từ vựng theo định dạng sau:\n"
-            "word (type): pronunciation meaning\n"
-            "Ví dụ: hello (n): /həˈləʊ/ xin chào"
+            "word (type):\n"
+            "/pronunciation/ meaning\n\n"
+            "Ví dụ có phiên âm:\n"
+            "hello (n):\n"
+            "/həˈləʊ/ xin chào\n\n"
         )
         instruction_label.setStyleSheet("color: #7f8c8d; background-color: #f8f9fa; padding: 3px; border-radius: 3px; font-size: 8px;")
         form_layout.addWidget(instruction_label)
@@ -426,42 +429,89 @@ class VocabularyApp(QMainWindow):
     
     def show_vocab_context_menu(self, position):
         """Hiển thị menu ngữ cảnh cho bộ từ vựng"""
-        item = self.vocab_sets_list.itemAt(position)
-        if not item:
-            return
+        menu = QMenu()
         
-        set_name = item.text()
-        
-        context_menu = QMenu(self)
-        
-        study_action = QAction("Học", self)
-        study_action.triggered.connect(lambda: self.start_flashcard_for_set(set_name))
-        context_menu.addAction(study_action)
-        
-        edit_action = QAction("Chỉnh sửa", self)
-        edit_action.triggered.connect(lambda: self.edit_vocab_set_by_name(set_name))
-        context_menu.addAction(edit_action)
-        
-        move_menu = QMenu("Chuyển đến danh mục", self)
-        
-        # Thêm tùy chọn "Không có danh mục"
-        no_category_action = QAction("Không có danh mục", self)
-        no_category_action.triggered.connect(lambda: self.move_to_category(set_name, None))
-        move_menu.addAction(no_category_action)
-        
-        # Thêm các danh mục
-        for category in self.categories:
-            category_action = QAction(category, self)
-            category_action.triggered.connect(lambda checked, cat=category: self.move_to_category(set_name, cat))
-            move_menu.addAction(category_action)
-        
-        context_menu.addMenu(move_menu)
-        
-        delete_action = QAction("Xóa", self)
-        delete_action.triggered.connect(lambda: self.delete_vocab_set_by_name(set_name))
-        context_menu.addAction(delete_action)
-        
-        context_menu.exec_(self.vocab_sets_list.mapToGlobal(position))
+        # Chỉ hiển thị menu khi có mục được chọn
+        if self.vocab_sets_list.selectedItems():
+            selected_item = self.vocab_sets_list.selectedItems()[0]
+            set_name = selected_item.text()
+            
+            # Thêm các hành động vào menu
+            edit_action = QAction(qta.icon('fa5s.edit', color='#3498db'), "Chỉnh sửa", self)
+            edit_action.triggered.connect(lambda: self.edit_vocab_set(set_name))
+            
+            learn_action = QAction(qta.icon('fa5s.graduation-cap', color='#3498db'), "Học", self)
+            learn_action.triggered.connect(lambda: self.start_flashcard(selected_item))
+            
+            delete_action = QAction(qta.icon('fa5s.trash-alt', color='#e74c3c'), "Xóa", self)
+            delete_action.triggered.connect(lambda: self.delete_vocab_set_by_name(set_name))
+            
+            export_action = QAction(qta.icon('fa5s.file-export', color='#3498db'), "Xuất", self)
+            export_action.triggered.connect(self.export_vocab)
+            
+            # Thêm các hành động vào menu
+            menu.addAction(edit_action)
+            menu.addAction(learn_action)
+            menu.addAction(delete_action)
+            menu.addAction(export_action)
+            
+            # Hiển thị menu tại vị trí chuột
+            menu.exec_(self.vocab_sets_list.mapToGlobal(position))
+    
+    def edit_vocab_set(self, set_name):
+        """Chỉnh sửa bộ từ vựng"""
+        if set_name in self.vocabulary_sets:
+            # Lưu tên bộ từ vựng hiện tại
+            self.current_set_name = set_name
+            
+            # Lấy dữ liệu từ vựng
+            vocab_data = self.vocabulary_sets[set_name]
+            
+            # Cập nhật danh sách danh mục
+            self.update_category_combo()
+            
+            # Điền thông tin vào form
+            self.set_name_edit.setText(set_name)
+            
+            # Chọn danh mục
+            if isinstance(vocab_data, dict) and 'category' in vocab_data:
+                category = vocab_data['category']
+                index = self.category_combo.findText(category)
+                if index >= 0:
+                    self.category_combo.setCurrentIndex(index)
+            
+            # Chuyển đổi dữ liệu từ vựng thành văn bản
+            vocab_text = ""
+            items = []
+            if isinstance(vocab_data, list):
+                items = vocab_data
+            elif isinstance(vocab_data, dict) and 'items' in vocab_data:
+                items = vocab_data['items']
+            
+            for item in items:
+                word = item.get('word', '')
+                word_type = item.get('type', '')
+                pronunciation = item.get('pronunciation', '')
+                meaning = item.get('meaning', '')
+                
+                # Định dạng theo yêu cầu mới
+                if word_type:
+                    vocab_text += f"{word} ({word_type}):\n"
+                else:
+                    vocab_text += f"{word}:\n"
+                
+                # Nếu có phiên âm thì hiển thị, nếu không thì chỉ hiển thị nghĩa
+                if pronunciation and pronunciation.strip():
+                    vocab_text += f"{pronunciation} {meaning}\n\n"
+                else:
+                    vocab_text += f"{meaning}\n\n"
+            
+            self.vocab_edit.setText(vocab_text.strip())
+            
+            # Chuyển đến trang chỉnh sửa
+            self.stacked_widget.setCurrentIndex(1)
+        else:
+            QMessageBox.warning(self, 'Cảnh báo', f'Không tìm thấy bộ từ vựng "{set_name}"!')
     
     def move_to_category(self, set_name, category):
         """Chuyển bộ từ vựng đến danh mục khác"""
@@ -526,14 +576,9 @@ class VocabularyApp(QMainWindow):
             # Chuyển đến trang flashcard
             self.stacked_widget.setCurrentWidget(self.flashcard_page)
     
-    def start_flashcard(self):
+    def start_flashcard(self, item):
         """Bắt đầu học từ vựng với flashcard"""
-        selected_items = self.vocab_sets_list.selectedItems()
-        if not selected_items:
-            QMessageBox.warning(self, 'Cảnh báo', 'Vui lòng chọn một bộ từ vựng để học!')
-            return
-        
-        set_name = selected_items[0].text()
+        set_name = item.text()
         self.start_flashcard_for_set(set_name)
     
     def switch_to_main_page(self):
@@ -547,44 +592,6 @@ class VocabularyApp(QMainWindow):
         self.vocab_edit.clear()
         self.category_combo.setCurrentIndex(0)
         self.stacked_widget.setCurrentIndex(1)
-    
-    def edit_vocab_set_by_name(self, set_name):
-        """Chỉnh sửa bộ từ vựng theo tên"""
-        if set_name in self.vocabulary_sets:
-            vocab_data = self.vocabulary_sets[set_name]
-            
-            # Xác định danh sách từ vựng và danh mục
-            if isinstance(vocab_data, list):
-                vocab_items = vocab_data
-            elif isinstance(vocab_data, dict) and 'items' in vocab_data:
-                vocab_items = vocab_data['items']
-            else:
-                QMessageBox.warning(self, 'Cảnh báo', 'Định dạng bộ từ vựng không hợp lệ!')
-                return
-            
-            # Xóa widget flashcard cũ nếu có
-            if hasattr(self, 'flashcard_widget'):
-                self.flashcard_widget.deleteLater()
-            
-            # Tạo widget flashcard mới
-            self.flashcard_widget = FlashcardWidget(vocab_items)
-            
-            # Kết nối tín hiệu back_to_main với phương thức switch_to_main_page
-            self.flashcard_widget.back_to_main.connect(self.switch_to_main_page)
-            
-            # Thêm widget vào trang flashcard
-            flashcard_layout = QVBoxLayout()
-            flashcard_layout.addWidget(self.flashcard_widget)
-            
-            # Xóa layout cũ nếu có
-            if self.flashcard_page.layout():
-                QWidget().setLayout(self.flashcard_page.layout())
-            
-            # Thiết lập layout mới
-            self.flashcard_page.setLayout(flashcard_layout)
-            
-            # Chuyển đến trang flashcard
-            self.stacked_widget.setCurrentWidget(self.flashcard_page)
     
     def add_vocabulary(self):
         from utils.vocab_parser import VocabParser
