@@ -2,132 +2,56 @@ class VocabParser:
     def parse_vocab_text(self, vocab_text):
         """Phân tích văn bản từ vựng thành danh sách các từ"""
         vocab_items = []
-        current_item = {}
         
-        lines = vocab_text.split('\n')
+        # Đảm bảo đầu vào là văn bản thuần túy
+        if not isinstance(vocab_text, str):
+            return vocab_items
+        
+        # Chuẩn hóa văn bản: thay thế nhiều dòng trống liên tiếp bằng một dấu phân cách đặc biệt
+        normalized_text = vocab_text.replace('\r\n', '\n')  # Xử lý cả Windows line endings
+        
+        # Tách văn bản thành các dòng
+        lines = normalized_text.split('\n')
+        
+        # Xử lý từng dòng
         i = 0
         while i < len(lines):
-            line = lines[i].strip()
-            if not line:  # Bỏ qua dòng trống
+            current_line = lines[i].strip()
+            
+            # Bỏ qua dòng trống
+            if not current_line:
                 i += 1
                 continue
             
-            # Trường hợp 1: Dòng có định dạng "word (type):"
-            if "(" in line and "):" in line:
-                # Lưu từ trước đó nếu có
-                if current_item and 'word' in current_item:
-                    # Đảm bảo các trường bắt buộc có giá trị mặc định nếu thiếu
-                    if 'meaning' not in current_item:
-                        current_item['meaning'] = ""
-                    if 'pronunciation' not in current_item:
-                        current_item['pronunciation'] = ""
-                    if 'type' not in current_item:
-                        current_item['type'] = ""
-                    vocab_items.append(current_item)
+            # Dòng hiện tại là từ vựng
+            word = current_line
+            meaning = ""
+            
+            # Kiểm tra dòng tiếp theo có phải là nghĩa không
+            if i + 1 < len(lines):
+                next_line = lines[i + 1].strip()
                 
-                # Bắt đầu từ mới
-                parts = line.split(':', 1)
-                word_part = parts[0].strip()
-                
-                # Tách từ và loại từ
-                word_type_parts = word_part.split('(')
-                word = word_type_parts[0].strip()
-                word_type = word_type_parts[1].split(')')[0].strip() if len(word_type_parts) > 1 else ""
-                
-                # Tạo item mới
-                current_item = {
-                    'word': word,
-                    'type': word_type
-                }
-                
-                # Kiểm tra dòng tiếp theo
-                if i + 1 < len(lines):
-                    next_line = lines[i + 1].strip()
-                    if next_line.startswith('/') and '/' in next_line[1:]:
-                        # Dòng tiếp theo có phiên âm
-                        parts = next_line.split('/', 2)
-                        if len(parts) >= 3:
-                            pronunciation = '/' + parts[1] + '/'
-                            meaning = parts[2].strip()
-                            current_item['pronunciation'] = pronunciation
-                            current_item['meaning'] = meaning
-                            i += 2  # Đã xử lý 2 dòng
-                            continue
+                # Nếu dòng tiếp theo không trống, đó là nghĩa
+                if next_line:
+                    meaning = next_line
+                    i += 2  # Đã xử lý 2 dòng (từ và nghĩa)
+                else:
+                    # Dòng tiếp theo trống, tìm nghĩa ở dòng sau nữa
+                    if i + 2 < len(lines) and lines[i + 2].strip():
+                        meaning = lines[i + 2].strip()
+                        i += 3  # Đã xử lý 3 dòng (từ, dòng trống, nghĩa)
                     else:
-                        # Dòng tiếp theo không có phiên âm, coi như là nghĩa
-                        current_item['pronunciation'] = ""
-                        current_item['meaning'] = next_line
-                        i += 2  # Đã xử lý 2 dòng
-                        continue
+                        # Không tìm thấy nghĩa
+                        i += 1  # Chỉ xử lý dòng từ vựng
+            else:
+                # Không còn dòng nào nữa
+                i += 1
             
-            # Trường hợp 2: Dòng có định dạng "word:" (không có loại từ)
-            elif ":" in line and not ("(" in line and "):" in line):
-                # Lưu từ trước đó nếu có
-                if current_item and 'word' in current_item:
-                    # Đảm bảo các trường bắt buộc có giá trị mặc định nếu thiếu
-                    if 'meaning' not in current_item:
-                        current_item['meaning'] = ""
-                    if 'pronunciation' not in current_item:
-                        current_item['pronunciation'] = ""
-                    if 'type' not in current_item:
-                        current_item['type'] = ""
-                    vocab_items.append(current_item)
-                
-                # Bắt đầu từ mới
-                parts = line.split(':', 1)
-                word = parts[0].strip()
-                
-                # Tạo item mới không có loại từ
-                current_item = {
+            # Thêm từ vào danh sách
+            if word:  # Chỉ thêm nếu từ vựng không rỗng
+                vocab_items.append({
                     'word': word,
-                    'type': ""  # Loại từ trống
-                }
-                
-                # Kiểm tra dòng tiếp theo
-                if i + 1 < len(lines):
-                    next_line = lines[i + 1].strip()
-                    if next_line.startswith('/') and '/' in next_line[1:]:
-                        # Dòng tiếp theo có phiên âm
-                        parts = next_line.split('/', 2)
-                        if len(parts) >= 3:
-                            pronunciation = '/' + parts[1] + '/'
-                            meaning = parts[2].strip()
-                            current_item['pronunciation'] = pronunciation
-                            current_item['meaning'] = meaning
-                            i += 2  # Đã xử lý 2 dòng
-                            continue
-                    else:
-                        # Dòng tiếp theo không có phiên âm, coi như là nghĩa
-                        current_item['pronunciation'] = ""
-                        current_item['meaning'] = next_line
-                        i += 2  # Đã xử lý 2 dòng
-                        continue
-            
-            # Trường hợp 3: Dòng có phiên âm và nghĩa
-            elif line.startswith('/') and '/' in line[1:] and 'word' in current_item:
-                parts = line.split('/', 2)
-                if len(parts) >= 3:
-                    pronunciation = '/' + parts[1] + '/'
-                    meaning = parts[2].strip()
-                    current_item['pronunciation'] = pronunciation
-                    current_item['meaning'] = meaning
-            
-            # Trường hợp 4: Dòng chỉ có nghĩa (không có phiên âm)
-            elif 'word' in current_item and 'meaning' not in current_item:
-                current_item['pronunciation'] = ""
-                current_item['meaning'] = line
-            
-            i += 1
+                    'meaning': meaning
+                })
         
-        # Thêm từ cuối cùng nếu có
-        if current_item and 'word' in current_item:
-            # Đảm bảo các trường bắt buộc có giá trị mặc định nếu thiếu
-            if 'meaning' not in current_item:
-                current_item['meaning'] = ""
-            if 'pronunciation' not in current_item:
-                current_item['pronunciation'] = ""
-            if 'type' not in current_item:
-                current_item['type'] = ""
-            vocab_items.append(current_item)
-            
         return vocab_items 

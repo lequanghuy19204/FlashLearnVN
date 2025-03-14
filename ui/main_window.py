@@ -233,11 +233,14 @@ class VocabularyApp(QMainWindow):
         # Hướng dẫn
         instruction_label = QLabel(
             "Nhập từ vựng theo định dạng sau:\n"
-            "word (type):\n"
-            "/pronunciation/ meaning\n\n"
-            "Ví dụ có phiên âm:\n"
-            "hello (n):\n"
-            "/həˈləʊ/ xin chào\n\n"
+            "Từ vựng\n"
+            "Nghĩa\n\n"
+            "Ví dụ:\n"
+            "hello\n"
+            "xin chào\n\n"
+            "Solar-powered light\n"
+            "Đèn hoạt động bằng năng lượng mặt trời\n\n"
+            "Lưu ý: Có thể cách nhau 1 dòng trống hoặc không cần dòng trống giữa các cặp từ vựng-nghĩa."
         )
         instruction_label.setStyleSheet("color: #7f8c8d; background-color: #f8f9fa; padding: 3px; border-radius: 3px; font-size: 8px;")
         form_layout.addWidget(instruction_label)
@@ -315,24 +318,30 @@ class VocabularyApp(QMainWindow):
                 self.category_combo.addItem(category)
     
     def update_vocab_sets_list(self, category=None):
-        """Cập nhật danh sách bộ từ vựng theo danh mục"""
+        """Cập nhật danh sách bộ từ vựng"""
         self.vocab_sets_list.clear()
         
-        if category is None or category == "all":
-            # Hiển thị tất cả bộ từ vựng
-            for set_name, vocab_set in self.vocabulary_sets.items():
-                item = QListWidgetItem(set_name)
-                item.setIcon(qta.icon('fa5s.book', color='#3498db'))
-                self.vocab_sets_list.addItem(item)
-            self.vocab_title.setText("Tất cả bộ từ vựng")
-        else:
-            # Hiển thị bộ từ vựng theo danh mục
-            for set_name, vocab_set in self.vocabulary_sets.items():
-                if 'category' in vocab_set and vocab_set['category'] == category:
-                    item = QListWidgetItem(set_name)
-                    item.setIcon(qta.icon('fa5s.book', color='#3498db'))
-                    self.vocab_sets_list.addItem(item)
-            self.vocab_title.setText(f"Bộ từ vựng - {category}")
+        # Lọc bộ từ vựng theo danh mục nếu có
+        filtered_sets = {}
+        for set_name, vocab_data in self.vocabulary_sets.items():
+            if category is None or category == "Tất cả":
+                filtered_sets[set_name] = vocab_data
+            elif isinstance(vocab_data, dict) and 'category' in vocab_data and vocab_data['category'] == category:
+                filtered_sets[set_name] = vocab_data
+        
+        # Thêm các bộ từ vựng vào danh sách
+        for set_name, vocab_data in filtered_sets.items():
+            # Đếm số từ trong bộ từ vựng
+            num_words = 0
+            if isinstance(vocab_data, list):
+                num_words = len(vocab_data)
+            elif isinstance(vocab_data, dict) and 'items' in vocab_data:
+                num_words = len(vocab_data['items'])
+            
+            # Tạo item với tên bộ từ vựng và số từ
+            item = QListWidgetItem(f"{set_name} ({num_words} từ)")
+            item.setData(Qt.UserRole, set_name)  # Lưu tên thật của bộ từ vựng
+            self.vocab_sets_list.addItem(item)
     
     def category_selected(self, item):
         """Xử lý khi chọn danh mục"""
@@ -440,7 +449,8 @@ class VocabularyApp(QMainWindow):
         # Chỉ hiển thị menu khi có mục được chọn
         if self.vocab_sets_list.selectedItems():
             selected_item = self.vocab_sets_list.selectedItems()[0]
-            set_name = selected_item.text()
+            # Lấy tên thật của bộ từ vựng từ UserRole
+            set_name = selected_item.data(Qt.UserRole)
             
             # Thêm các hành động vào menu
             edit_action = QAction(qta.icon('fa5s.edit', color='#3498db'), "Chỉnh sửa", self)
@@ -453,7 +463,7 @@ class VocabularyApp(QMainWindow):
             delete_action.triggered.connect(lambda: self.delete_vocab_set_by_name(set_name))
             
             export_action = QAction(qta.icon('fa5s.file-export', color='#3498db'), "Xuất", self)
-            export_action.triggered.connect(self.export_vocab)
+            export_action.triggered.connect(lambda: self.export_vocab_by_name(set_name))
             
             # Thêm các hành động vào menu
             menu.addAction(edit_action)
@@ -496,21 +506,10 @@ class VocabularyApp(QMainWindow):
             
             for item in items:
                 word = item.get('word', '')
-                word_type = item.get('type', '')
-                pronunciation = item.get('pronunciation', '')
                 meaning = item.get('meaning', '')
                 
-                # Định dạng theo yêu cầu mới
-                if word_type:
-                    vocab_text += f"{word} ({word_type}):\n"
-                else:
-                    vocab_text += f"{word}:\n"
-                
-                # Nếu có phiên âm thì hiển thị, nếu không thì chỉ hiển thị nghĩa
-                if pronunciation and pronunciation.strip():
-                    vocab_text += f"{pronunciation} {meaning}\n\n"
-                else:
-                    vocab_text += f"{meaning}\n\n"
+                # Định dạng: từ vựng ở một dòng, nghĩa ở dòng tiếp theo, sau đó là dòng trống
+                vocab_text += f"{word}\n{meaning}\n\n"
             
             self.vocab_edit.setText(vocab_text.strip())
             
@@ -584,7 +583,8 @@ class VocabularyApp(QMainWindow):
     
     def start_flashcard(self, item):
         """Bắt đầu học từ vựng với flashcard"""
-        set_name = item.text()
+        # Lấy tên thật của bộ từ vựng từ UserRole
+        set_name = item.data(Qt.UserRole)
         self.start_flashcard_for_set(set_name)
     
     def switch_to_main_page(self):
@@ -600,47 +600,64 @@ class VocabularyApp(QMainWindow):
         self.stacked_widget.setCurrentIndex(1)
     
     def add_vocabulary(self):
-        from utils.vocab_parser import VocabParser
-        
+        """Thêm hoặc cập nhật bộ từ vựng"""
         set_name = self.set_name_edit.text().strip()
         if not set_name:
             QMessageBox.warning(self, 'Cảnh báo', 'Vui lòng nhập tên bộ từ vựng!')
             return
         
+        # Lấy danh mục đã chọn
+        category_index = self.category_combo.currentIndex()
+        if category_index <= 0:  # "Không có danh mục" hoặc không chọn
+            category = "Chung"
+        else:
+            category = self.category_combo.currentText()
+        
+        # Lấy nội dung từ vựng và chuyển đổi thành văn bản thuần túy
         vocab_text = self.vocab_edit.toPlainText().strip()
+        
+        # Kiểm tra nếu nội dung rỗng
         if not vocab_text:
-            QMessageBox.warning(self, 'Cảnh báo', 'Vui lòng nhập từ vựng!')
+            QMessageBox.warning(self, 'Cảnh báo', 'Vui lòng nhập nội dung từ vựng!')
             return
         
-        # Lấy danh mục đã chọn
-        category = self.category_combo.currentText()
-        if not category:
-            category = "Chung"
-        
         # Phân tích văn bản từ vựng
+        from utils.vocab_parser import VocabParser
         parser = VocabParser()
         vocab_items = parser.parse_vocab_text(vocab_text)
         
+        # Kiểm tra nếu không có từ vựng nào được phân tích
         if not vocab_items:
-            QMessageBox.warning(self, 'Cảnh báo', 'Không thể phân tích từ vựng. Vui lòng kiểm tra định dạng!')
+            QMessageBox.warning(self, 'Cảnh báo', 'Không thể phân tích nội dung từ vựng. Vui lòng kiểm tra định dạng!')
             return
         
-        # Chuẩn bị dữ liệu để lưu
+        # Đếm số từ mới được thêm vào
+        num_new_words = len(vocab_items)
+        
+        # Tạo dữ liệu từ vựng
         vocab_data = {
-            'items': vocab_items,
-            'category': category
+            'category': category,
+            'items': vocab_items
         }
         
         # Lưu bộ từ vựng
-        if self.data_manager.save_vocab_set(set_name, vocab_data, category):
-            # Cập nhật dữ liệu trong bộ nhớ
-            self.vocabulary_sets[set_name] = vocab_data
-            
-            QMessageBox.information(self, 'Thành công', 
-                                  f'Đã lưu {len(vocab_items)} từ vào bộ từ vựng "{set_name}" trong danh mục "{category}"')
-            self.switch_to_main_page()  # Quay lại trang chính
-        else:
-            QMessageBox.critical(self, 'Lỗi', f'Không thể lưu bộ từ vựng "{set_name}"')
+        old_name = self.current_set_name
+        if old_name and old_name != set_name:
+            # Đổi tên bộ từ vựng
+            self.data_manager.delete_vocab_set(old_name)
+        
+        self.data_manager.save_vocab_set(set_name, vocab_data, category)
+        
+        # Cập nhật dữ liệu trong bộ nhớ
+        self.vocabulary_sets = self.data_manager.load_all_data()
+        self.update_vocab_sets_list()
+        
+        # Hiển thị thông báo thành công với số từ mới
+        QMessageBox.information(self, 'Thành công', 
+                               f'Đã lưu bộ từ vựng "{set_name}" với {num_new_words} từ!')
+        
+        # Quay lại trang chính
+        self.switch_to_main_page()
     
     def delete_vocab_set_by_name(self, set_name):
         reply = QMessageBox.question(self, 'Xác nhận', 
@@ -669,7 +686,9 @@ class VocabularyApp(QMainWindow):
             QMessageBox.warning(self, 'Cảnh báo', 'Vui lòng chọn một bộ từ vựng để xuất!')
             return
         
-        set_name = selected_items[0].text()
+        # Lấy tên thật của bộ từ vựng từ UserRole
+        set_name = selected_items[0].data(Qt.UserRole)
+        
         if set_name in self.vocabulary_sets:
             file_path, _ = QFileDialog.getSaveFileName(self, "Lưu bộ từ vựng", 
                                                     f"{set_name}.json", 
@@ -686,34 +705,89 @@ class VocabularyApp(QMainWindow):
     
     def import_vocab(self):
         file_path, _ = QFileDialog.getOpenFileName(self, "Chọn file từ vựng", 
-                                                "", "JSON Files (*.json)")
+                                                "", "JSON Files (*.json);;Text Files (*.txt)")
         
         if file_path:
             try:
-                with open(file_path, 'r', encoding='utf-8') as f:
-                    imported_data = json.load(f)
+                total_words_imported = 0
+                sets_imported = 0
                 
-                category = "Chung"  # Danh mục mặc định
-                
-                for set_name, vocab_data in imported_data.items():
-                    if set_name in self.vocabulary_sets:
-                        reply = QMessageBox.question(self, 'Xác nhận', 
+                if file_path.endswith('.json'):
+                    # Nhập từ file JSON
+                    with open(file_path, 'r', encoding='utf-8') as f:
+                        imported_data = json.load(f)
+                    
+                    category = "Chung"  # Danh mục mặc định
+                    
+                    for set_name, vocab_data in imported_data.items():
+                        if set_name in self.vocabulary_sets:
+                            reply = QMessageBox.question(self, 'Xác nhận', 
                                                 f'Bộ từ vựng "{set_name}" đã tồn tại. Bạn có muốn ghi đè không?',
                                                 QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+                            
+                            if reply == QMessageBox.No:
+                                continue
+                        
+                        # Lưu bộ từ vựng
+                        if isinstance(vocab_data, dict) and 'category' in vocab_data:
+                            category = vocab_data['category']
+                        
+                        # Đếm số từ trong bộ từ vựng
+                        num_words = 0
+                        if isinstance(vocab_data, list):
+                            num_words = len(vocab_data)
+                        elif isinstance(vocab_data, dict) and 'items' in vocab_data:
+                            num_words = len(vocab_data['items'])
+                        
+                        self.data_manager.save_vocab_set(set_name, vocab_data, category)
+                        total_words_imported += num_words
+                        sets_imported += 1
+                
+                elif file_path.endswith('.txt'):
+                    # Nhập từ file văn bản
+                    with open(file_path, 'r', encoding='utf-8') as f:
+                        vocab_text = f.read().strip()
+                    
+                    # Lấy tên file làm tên bộ từ vựng
+                    set_name = os.path.splitext(os.path.basename(file_path))[0]
+                    
+                    # Phân tích văn bản từ vựng
+                    from utils.vocab_parser import VocabParser
+                    parser = VocabParser()
+                    vocab_items = parser.parse_vocab_text(vocab_text)
+                    
+                    # Kiểm tra nếu không có từ vựng nào được phân tích
+                    if not vocab_items:
+                        QMessageBox.warning(self, 'Cảnh báo', 'Không thể phân tích nội dung từ vựng. Vui lòng kiểm tra định dạng!')
+                        return
+                    
+                    # Tạo dữ liệu từ vựng
+                    vocab_data = {
+                        'category': "Chung",
+                        'items': vocab_items
+                    }
+                    
+                    # Kiểm tra nếu bộ từ vựng đã tồn tại
+                    if set_name in self.vocabulary_sets:
+                        reply = QMessageBox.question(self, 'Xác nhận', 
+                                            f'Bộ từ vựng "{set_name}" đã tồn tại. Bạn có muốn ghi đè không?',
+                                            QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
                         
                         if reply == QMessageBox.No:
-                            continue
+                            return
                     
                     # Lưu bộ từ vựng
-                    if isinstance(vocab_data, dict) and 'category' in vocab_data:
-                        category = vocab_data['category']
-                    
-                    self.data_manager.save_vocab_set(set_name, vocab_data, category)
+                    self.data_manager.save_vocab_set(set_name, vocab_data, "Chung")
+                    total_words_imported += len(vocab_items)
+                    sets_imported += 1
                 
                 # Cập nhật dữ liệu trong bộ nhớ
                 self.vocabulary_sets = self.data_manager.load_all_data()
                 self.update_vocab_sets_list()
-                QMessageBox.information(self, 'Thành công', 'Đã nhập từ vựng thành công!')
+                
+                # Hiển thị thông báo thành công với số từ mới
+                QMessageBox.information(self, 'Thành công', 
+                                       f'Đã nhập {sets_imported} bộ từ vựng với tổng cộng {total_words_imported} từ!')
             
             except Exception as e:
                 QMessageBox.critical(self, 'Lỗi', f'Lỗi khi nhập file: {str(e)}')

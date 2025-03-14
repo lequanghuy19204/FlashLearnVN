@@ -60,24 +60,25 @@ class FlashcardWidget(QWidget):
         card_layout.setContentsMargins(5, 5, 5, 5)  # Giảm padding
         card_layout.setSpacing(3)  # Giảm khoảng cách
         
-        # Từ và loại từ
+        # Từ vựng
         self.word_label = QLabel()
         self.word_label.setAlignment(Qt.AlignCenter)
         self.word_label.setFont(QFont("Segoe UI", 12, QFont.Bold))  # Giảm kích thước font
         self.word_label.setStyleSheet("color: #2c3e50;")
         card_layout.addWidget(self.word_label)
         
-        # Phiên âm
+        # Phiên âm (giữ lại nhưng ẩn đi)
         self.pronunciation_label = QLabel()
         self.pronunciation_label.setAlignment(Qt.AlignCenter)
-        self.pronunciation_label.setFont(QFont("Segoe UI", 10))  # Giảm kích thước font
+        self.pronunciation_label.setFont(QFont("Segoe UI", 10))
         self.pronunciation_label.setStyleSheet("color: #7f8c8d;")
+        self.pronunciation_label.setVisible(False)  # Ẩn label phiên âm
         card_layout.addWidget(self.pronunciation_label)
         
         # Nghĩa
         self.meaning_label = QLabel()
         self.meaning_label.setAlignment(Qt.AlignCenter)
-        self.meaning_label.setFont(QFont("Segoe UI", 11))  # Giảm kích thước font
+        self.meaning_label.setFont(QFont("Segoe UI", 11))
         self.meaning_label.setWordWrap(True)
         self.meaning_label.setStyleSheet("color: #e74c3c;")
         card_layout.addWidget(self.meaning_label)
@@ -174,13 +175,10 @@ class FlashcardWidget(QWidget):
         self.info_label.setText(f"Thẻ {self.current_index + 1}/{len(self.vocab_items)}")
         
         item = self.vocab_items[self.current_index]
-        word_text = f"{item['word']} ({item['type']})"
-        self.word_label.setText(word_text)
+        self.word_label.setText(item['word'])
         
-        if 'pronunciation' in item:
-            self.pronunciation_label.setText(item['pronunciation'])
-        else:
-            self.pronunciation_label.setText("")
+        # Ẩn label phiên âm vì không còn sử dụng
+        self.pronunciation_label.setVisible(False)
         
         if self.show_meaning:
             self.meaning_label.setText(item['meaning'])
