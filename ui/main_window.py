@@ -28,7 +28,13 @@ class VocabularyApp(QMainWindow):
         # Thiết lập cửa sổ chính
         self.setWindowTitle('FlashLearnVN')
         self.setGeometry(100, 100, 400, 300)  # Giảm chiều cao xuống 300
-        self.setWindowIcon(QIcon(qta.icon('fa5s.book-open', color='#3498db').pixmap(64, 64)))
+        
+        # Sử dụng logo từ file nếu tồn tại, nếu không thì sử dụng qtawesome
+        logo_path = "ui/images/logo.png"
+        if os.path.exists(logo_path):
+            self.setWindowIcon(QIcon(logo_path))
+        else:
+            self.setWindowIcon(QIcon(qta.icon('fa5s.book-open', color='#3498db').pixmap(64, 64)))
         
         # Widget trung tâm với StackedWidget để chuyển đổi giữa các trang
         self.central_widget = QWidget()

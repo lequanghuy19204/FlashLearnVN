@@ -11,7 +11,7 @@ sys.excepthook = exception_hook
 
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QFont
+from PyQt5.QtGui import QFont, QIcon
 from ui.main_window import VocabularyApp
 
 if __name__ == '__main__':
@@ -26,6 +26,12 @@ if __name__ == '__main__':
     # Thiết lập font mặc định
     font = QFont("Segoe UI", 9)  # Giảm kích thước font
     app.setFont(font)
+    
+    # Thiết lập biểu tượng ứng dụng
+    logo_path = "ui/images/logo.png"
+    if os.path.exists(logo_path):
+        app_icon = QIcon(logo_path)
+        app.setWindowIcon(app_icon)
     
     # Thiết lập style sheet toàn cục
     style_path = "ui/styles/style.qss"
