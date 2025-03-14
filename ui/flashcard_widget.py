@@ -32,57 +32,52 @@ class FlashcardWidget(QWidget):
         
     def initUI(self):
         layout = QVBoxLayout(self)
-        layout.setSpacing(20)
-        
-        # Tiêu đề
-        title_label = QLabel("Học từ vựng với thẻ ghi nhớ")
-        title_label.setAlignment(Qt.AlignCenter)
-        title_label.setFont(QFont("Segoe UI", 18, QFont.Bold))
-        title_label.setStyleSheet("color: #2c3e50; margin-bottom: 10px;")
-        layout.addWidget(title_label)
+        layout.setSpacing(5)  # Giảm khoảng cách
+        layout.setContentsMargins(5, 5, 5, 5)  # Giảm margin
         
         # Thông tin thẻ
         self.info_label = QLabel(f"Thẻ 1/{len(self.vocab_items)}")
         self.info_label.setAlignment(Qt.AlignCenter)
-        self.info_label.setStyleSheet("color: #7f8c8d; font-size: 14px;")
+        self.info_label.setStyleSheet("color: #7f8c8d; font-size: 8px;")
         layout.addWidget(self.info_label)
         
         # Thẻ ghi nhớ
         self.card_frame = QFrame()
         self.card_frame.setFrameShape(QFrame.Box)
-        self.card_frame.setLineWidth(2)
-        self.card_frame.setMinimumSize(400, 250)
+        self.card_frame.setLineWidth(1)
+        self.card_frame.setMinimumSize(200, 120)  # Giảm kích thước thẻ
+        self.card_frame.setMaximumHeight(120)  # Giới hạn chiều cao tối đa
         self.card_frame.setCursor(Qt.PointingHandCursor)
         self.card_frame.setStyleSheet("""
             QFrame {
                 background-color: white;
-                border: 2px solid #3498db;
-                border-radius: 15px;
+                border: 1px solid #3498db;
+                border-radius: 5px;
             }
         """)
         
         card_layout = QVBoxLayout(self.card_frame)
-        card_layout.setContentsMargins(20, 20, 20, 20)
-        card_layout.setSpacing(15)
+        card_layout.setContentsMargins(5, 5, 5, 5)  # Giảm padding
+        card_layout.setSpacing(3)  # Giảm khoảng cách
         
         # Từ và loại từ
         self.word_label = QLabel()
         self.word_label.setAlignment(Qt.AlignCenter)
-        self.word_label.setFont(QFont("Segoe UI", 22, QFont.Bold))
+        self.word_label.setFont(QFont("Segoe UI", 12, QFont.Bold))  # Giảm kích thước font
         self.word_label.setStyleSheet("color: #2c3e50;")
         card_layout.addWidget(self.word_label)
         
         # Phiên âm
         self.pronunciation_label = QLabel()
         self.pronunciation_label.setAlignment(Qt.AlignCenter)
-        self.pronunciation_label.setFont(QFont("Segoe UI", 16))
+        self.pronunciation_label.setFont(QFont("Segoe UI", 10))  # Giảm kích thước font
         self.pronunciation_label.setStyleSheet("color: #7f8c8d;")
         card_layout.addWidget(self.pronunciation_label)
         
         # Nghĩa
         self.meaning_label = QLabel()
         self.meaning_label.setAlignment(Qt.AlignCenter)
-        self.meaning_label.setFont(QFont("Segoe UI", 18))
+        self.meaning_label.setFont(QFont("Segoe UI", 11))  # Giảm kích thước font
         self.meaning_label.setWordWrap(True)
         self.meaning_label.setStyleSheet("color: #e74c3c;")
         card_layout.addWidget(self.meaning_label)
@@ -92,7 +87,7 @@ class FlashcardWidget(QWidget):
         
         # Nút điều khiển
         controls_layout = QHBoxLayout()
-        controls_layout.setSpacing(15)
+        controls_layout.setSpacing(5)  # Giảm khoảng cách
         
         # Nút trước - sử dụng icon từ qtawesome
         self.prev_button = self.create_tool_button(qta.icon('fa5s.chevron-left', color='white'), "Trước")
@@ -113,7 +108,7 @@ class FlashcardWidget(QWidget):
         
         # Nút phát âm
         audio_layout = QHBoxLayout()
-        audio_layout.setSpacing(15)
+        audio_layout.setSpacing(5)  # Giảm khoảng cách
         
         # Nút đọc từ - sử dụng icon từ qtawesome
         self.speak_word_button = self.create_tool_button(qta.icon('fa5s.volume-up', color='white'), "Đọc từ")
@@ -126,7 +121,7 @@ class FlashcardWidget(QWidget):
         audio_layout.addWidget(self.speak_meaning_button)
         
         # Nút tự động đọc - sử dụng icon từ qtawesome
-        self.auto_play_button = self.create_tool_button(qta.icon('fa5s.play', color='white'), "Tự động đọc")
+        self.auto_play_button = self.create_tool_button(qta.icon('fa5s.play', color='white'), "Tự động")
         self.auto_play_button.clicked.connect(self.toggle_auto_play)
         audio_layout.addWidget(self.auto_play_button)
         
@@ -135,7 +130,7 @@ class FlashcardWidget(QWidget):
         # Nút quay lại
         back_layout = QHBoxLayout()
         
-        self.back_button = QPushButton("Quay lại danh sách bộ từ vựng")
+        self.back_button = QPushButton("Quay lại")
         self.back_button.setIcon(qta.icon('fa5s.arrow-left'))
         self.back_button.clicked.connect(self.go_back)
         back_layout.addWidget(self.back_button)
@@ -149,15 +144,15 @@ class FlashcardWidget(QWidget):
         """Tạo nút công cụ với icon"""
         button = QToolButton()
         button.setIcon(icon)
-        button.setIconSize(QSize(32, 32))
+        button.setIconSize(QSize(16, 16))  # Giảm kích thước icon
         button.setToolTip(tooltip)
         button.setCursor(Qt.PointingHandCursor)
         button.setStyleSheet("""
             QToolButton {
                 background-color: #3498db;
-                border: 2px solid #2980b9;
-                border-radius: 20px;
-                padding: 10px;
+                border: 1px solid #2980b9;
+                border-radius: 12px;
+                padding: 3px;
             }
             QToolButton:hover {
                 background-color: #2980b9;
@@ -166,7 +161,8 @@ class FlashcardWidget(QWidget):
                 background-color: #1c6ea4;
             }
         """)
-        button.setMinimumSize(QSize(64, 64))
+        button.setMinimumSize(QSize(30, 30))  # Giảm kích thước nút
+        button.setMaximumSize(QSize(30, 30))  # Giới hạn kích thước tối đa
         button.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         return button
     

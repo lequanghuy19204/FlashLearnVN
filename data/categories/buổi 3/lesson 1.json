@@ -1,0 +1,106 @@
+{
+  "items": [
+    {
+      "word": "Engineer",
+      "type": "n",
+      "pronunciation": "/ˌen.dʒɪˈnɪər/",
+      "meaning": "Kỹ sư"
+    },
+    {
+      "word": "Design",
+      "type": "v",
+      "pronunciation": "/dɪˈzaɪn/",
+      "meaning": "Thiết kế"
+    },
+    {
+      "word": "Construction",
+      "type": "n",
+      "pronunciation": "/kənˈstrʌk.ʃən/",
+      "meaning": "Xây dựng"
+    },
+    {
+      "word": "Innovation",
+      "type": "n",
+      "pronunciation": "/ˌɪn.əˈveɪ.ʃən/",
+      "meaning": "Đổi mới"
+    },
+    {
+      "word": "Project",
+      "type": "n",
+      "pronunciation": "/ˈprɑː.dʒekt/",
+      "meaning": "Dự án"
+    },
+    {
+      "word": "Technical",
+      "type": "adj",
+      "pronunciation": "/ˈtek.nɪ.kəl/",
+      "meaning": "Kỹ thuật"
+    },
+    {
+      "word": "Efficiency",
+      "type": "n",
+      "pronunciation": "/ɪˈfɪʃ.ən.si/",
+      "meaning": "Hiệu suất"
+    },
+    {
+      "word": "Blueprint",
+      "type": "n",
+      "pronunciation": "/ˈbluː.prɪnt/",
+      "meaning": "Bản vẽ kỹ thuật"
+    },
+    {
+      "word": "Prototype",
+      "type": "n",
+      "pronunciation": "/ˈproʊ.t̬ə.taɪp/",
+      "meaning": "Nguyên mẫu"
+    },
+    {
+      "word": "Maintenance",
+      "type": "n",
+      "pronunciation": "/ˈmeɪn.tən.əns/",
+      "meaning": "Bảo dưỡng"
+    },
+    {
+      "word": "Analysis",
+      "type": "n",
+      "pronunciation": "/əˈnæl.ə.sɪs/",
+      "meaning": "Phân tích"
+    },
+    {
+      "word": "Programming",
+      "type": "n",
+      "pronunciation": "/ˈproʊ.ɡræm.ɪŋ/",
+      "meaning": "Lập trình"
+    },
+    {
+      "word": "Automation",
+      "type": "n",
+      "pronunciation": "/ˌɑː.t̬əˈmeɪ.ʃən/",
+      "meaning": "Tự động hóa"
+    },
+    {
+      "word": "Testing",
+      "type": "n",
+      "pronunciation": "/ˈtes.tɪŋ/",
+      "meaning": "Kiểm tra"
+    },
+    {
+      "word": "Optimization",
+      "type": "n",
+      "pronunciation": "/ˌɑːp.tə.məˈzeɪ.ʃən/",
+      "meaning": "Tối ưu hóa"
+    },
+    {
+      "word": "Troubleshooting",
+      "type": "n",
+      "pronunciation": "/ˈtrʌb.əlˌʃuː.t̬ɪŋ/",
+      "meaning": "Sửa lỗi"
+    },
+    {
+      "word": "Electrical",
+      "type": "adj",
+      "pronunciation": "/iˈlek.trɪ.kəl/",
+      "meaning": "Điện"
+    }
+  ]
+}
