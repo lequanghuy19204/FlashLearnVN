@@ -1,0 +1,34 @@
+{
+  "lesson 1": [
+    {
+      "word": "Engineer",
+      "type": "n",
+      "pronunciation": "/ˌen.dʒɪˈnɪər/",
+      "meaning": "Kỹ sư"
+    },
+    {
+      "word": "Design",
+      "type": "v",
+      "pronunciation": "/dɪˈzaɪn/",
+      "meaning": "Thiết kế"
+    },
+    {
+      "word": "Construction",
+      "type": "n",
+      "pronunciation": "/kənˈstrʌk.ʃən/",
+      "meaning": "Xây dựng"
+    },
+    {
+      "word": "Innovation",
+      "type": "n",
+      "pronunciation": "/ˌɪn.əˈveɪ.ʃən/",
+      "meaning": "Đổi mới"
+    },
+    {
+      "word": "Assembly",
+      "type": "n",
+      "pronunciation": "/əˈsem.bli/",
+      "meaning": "Lắp ráp"
+    }
+  ]
+}
