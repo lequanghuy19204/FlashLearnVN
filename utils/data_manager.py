@@ -31,28 +31,48 @@ class DataManager:
         """Tải tất cả dữ liệu từ vựng từ các thư mục danh mục"""
         vocabulary_sets = {}
         
+        # Đảm bảo thư mục danh mục tồn tại
+        self.ensure_data_dirs()
+        
         # Duyệt qua tất cả các thư mục danh mục
         for category in self.get_categories():
             category_path = self.get_category_path(category)
             
+            # Đảm bảo thư mục danh mục tồn tại
+            if not os.path.exists(category_path):
+                os.makedirs(category_path, exist_ok=True)
+                continue
+            
             # Duyệt qua tất cả các file JSON trong thư mục danh mục
-            for file_name in os.listdir(category_path):
-                if file_name.endswith('.json'):
-                    set_name = os.path.splitext(file_name)[0]
-                    file_path = os.path.join(category_path, file_name)
-                    
-                    try:
-                        with open(file_path, 'r', encoding='utf-8') as f:
-                            vocab_data = json.load(f)
-                            # Thêm thông tin danh mục vào dữ liệu
-                            if isinstance(vocab_data, list):
-                                vocab_data = {'items': vocab_data, 'category': category}
-                            else:
-                                vocab_data['category'] = category
-                            
-                            vocabulary_sets[set_name] = vocab_data
-                    except Exception as e:
-                        print(f"Lỗi khi tải file {file_path}: {str(e)}")
+            try:
+                for file_name in os.listdir(category_path):
+                    if file_name.endswith('.json'):
+                        set_name = os.path.splitext(file_name)[0]
+                        file_path = os.path.join(category_path, file_name)
+                        
+                        try:
+                            with open(file_path, 'r', encoding='utf-8') as f:
+                                vocab_data = json.load(f)
+                                
+                                # Tạo khóa duy nhất cho mỗi bộ từ vựng bằng cách kết hợp tên và danh mục
+                                unique_key = f"{category}::{set_name}"
+                                
+                                # Thêm thông tin danh mục vào dữ liệu
+                                if isinstance(vocab_data, dict):
+                                    vocab_data['category'] = category
+                                    vocab_data['set_name'] = set_name
+                                elif isinstance(vocab_data, list):
+                                    vocab_data = {
+                                        'items': vocab_data, 
+                                        'category': category,
+                                        'set_name': set_name
+                                    }
+                                
+                                vocabulary_sets[unique_key] = vocab_data
+                        except Exception as e:
+                            print(f"Lỗi khi tải file {file_path}: {str(e)}")
+            except Exception as e:
+                print(f"Lỗi khi đọc thư mục {category_path}: {str(e)}")
         
         return vocabulary_sets
     
@@ -97,6 +117,9 @@ class DataManager:
         """Lấy danh sách các danh mục"""
         categories = []
         try:
+            # Đảm bảo thư mục danh mục tồn tại
+            self.ensure_data_dirs()
+            
             if os.path.exists(self.categories_dir):
                 for item in os.listdir(self.categories_dir):
                     item_path = os.path.join(self.categories_dir, item)
@@ -185,4 +208,9 @@ class DataManager:
                 return True
             except Exception as e:
                 print(f"Lỗi khi di chuyển bộ từ vựng: {str(e)}")
-        return False 
+        return False
+    
+    def check_vocab_set_exists(self, set_name, category):
+        """Kiểm tra xem bộ từ vựng có tồn tại trong danh mục cụ thể không"""
+        file_path = self.get_set_path(category, set_name)
+        return os.path.exists(file_path) 

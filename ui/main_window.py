@@ -436,13 +436,34 @@ class VocabularyApp(QMainWindow):
             delete_action.triggered.connect(lambda: self.delete_vocab_set_by_name(set_name))
             
             export_action = QAction(qta.icon('fa5s.file-export', color='#3498db'), "Xuất", self)
-            export_action.triggered.connect(lambda: self.export_vocab_by_name(set_name))
+            export_action.triggered.connect(lambda: self.export_vocab(selected_item))
+            
+            # Thêm menu di chuyển
+            move_menu = QMenu("Di chuyển đến", menu)
+            move_menu.setIcon(qta.icon('fa5s.exchange-alt', color='#3498db'))
+            
+            # Lấy danh mục hiện tại của bộ từ vựng
+            current_category = "Chung"
+            if "::" in set_name:
+                current_category = set_name.split("::", 1)[0]
+            elif set_name in self.vocabulary_sets:
+                vocab_data = self.vocabulary_sets[set_name]
+                if isinstance(vocab_data, dict) and 'category' in vocab_data:
+                    current_category = vocab_data['category']
+            
+            # Thêm các danh mục vào menu di chuyển
+            for category in self.categories:
+                if category != current_category:  # Không hiển thị danh mục hiện tại
+                    category_action = QAction(category, self)
+                    category_action.triggered.connect(lambda checked, c=category: self.move_vocab_set_to_category(set_name, current_category, c))
+                    move_menu.addAction(category_action)
             
             # Thêm các hành động vào menu
             menu.addAction(edit_action)
             menu.addAction(learn_action)
             menu.addAction(delete_action)
             menu.addAction(export_action)
+            menu.addMenu(move_menu)
             
             # Hiển thị menu tại vị trí chuột
             menu.exec_(self.vocab_sets_list.mapToGlobal(position))
@@ -500,30 +521,64 @@ class VocabularyApp(QMainWindow):
         else:
             QMessageBox.warning(self, 'Cảnh báo', f'Không tìm thấy bộ từ vựng "{set_name}"!')
     
-    def move_to_category(self, set_name, category):
-        """Chuyển bộ từ vựng đến danh mục khác"""
+    def move_vocab_set_to_category(self, set_name, old_category, new_category):
+        """Di chuyển bộ từ vựng sang danh mục khác"""
+        # Xác định tên thực của bộ từ vựng (không có tiền tố danh mục)
+        actual_set_name = set_name
+        if "::" in set_name:
+            old_category, actual_set_name = set_name.split("::", 1)
+        
+        # Kiểm tra xem bộ từ vựng đã tồn tại trong danh mục đích chưa
+        if self.data_manager.check_vocab_set_exists(actual_set_name, new_category):
+            reply = QMessageBox.question(self, 'Xác nhận', 
+                                        f'Bộ từ vựng "{actual_set_name}" đã tồn tại trong danh mục "{new_category}". Bạn có muốn ghi đè không?',
+                                        QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+            if reply == QMessageBox.No:
+                return
+        
+        # Di chuyển bộ từ vựng
+        if self.data_manager.move_vocab_set(actual_set_name, old_category, new_category):
+            # Cập nhật dữ liệu trong bộ nhớ
+            self.vocabulary_sets = self.data_manager.load_all_data()
+            self.update_vocab_sets_list()
+            QMessageBox.information(self, 'Thành công', 
+                                  f'Đã di chuyển bộ từ vựng "{actual_set_name}" từ danh mục "{old_category}" sang "{new_category}"')
+        else:
+            QMessageBox.critical(self, 'Lỗi', 
+                               f'Không thể di chuyển bộ từ vựng "{actual_set_name}" sang danh mục "{new_category}"')
+    
+    def export_vocab(self, item=None):
+        """Xuất bộ từ vựng ra file"""
+        # Nếu không có item được truyền vào, lấy item đang được chọn
+        if item is None:
+            selected_items = self.vocab_sets_list.selectedItems()
+            if not selected_items:
+                QMessageBox.warning(self, 'Cảnh báo', 'Vui lòng chọn một bộ từ vựng để xuất!')
+                return
+            item = selected_items[0]
+        
+        # Lấy tên thật của bộ từ vựng từ UserRole
+        set_name = item.data(Qt.UserRole)
+        
+        # Tìm bộ từ vựng trong dữ liệu
         if set_name in self.vocabulary_sets:
-            # Nếu category là None, xóa thuộc tính category
-            if category is None:
-                if 'category' in self.vocabulary_sets[set_name]:
-                    self.vocabulary_sets[set_name].pop('category')
-            else:
-                # Đảm bảo vocabulary_sets[set_name] là dict
-                if not isinstance(self.vocabulary_sets[set_name], dict):
-                    # Chuyển đổi từ list sang dict
-                    items = self.vocabulary_sets[set_name]
-                    self.vocabulary_sets[set_name] = {'items': items, 'category': category}
-                else:
-                    self.vocabulary_sets[set_name]['category'] = category
+            vocab_data = self.vocabulary_sets[set_name]
             
-            # Lưu thay đổi
-            self.data_manager.save_data(self.vocabulary_sets)
+            # Hiển thị hộp thoại lưu file
+            file_path, _ = QFileDialog.getSaveFileName(self, "Lưu bộ từ vựng", 
+                                                    f"{set_name}.json", 
+                                                    "JSON Files (*.json)")
             
-            # Cập nhật giao diện
-            current_item = self.category_tree.currentItem()
-            if current_item:
-                current_category = current_item.data(0, Qt.UserRole)
-                self.update_vocab_sets_list(current_category)
+            if file_path:
+                try:
+                    with open(file_path, 'w', encoding='utf-8') as f:
+                        json.dump({set_name: vocab_data}, f, 
+                                ensure_ascii=False, indent=2)
+                    QMessageBox.information(self, 'Thành công', f'Đã xuất bộ từ vựng "{set_name}" thành công!')
+                except Exception as e:
+                    QMessageBox.critical(self, 'Lỗi', f'Lỗi khi xuất file: {str(e)}')
+        else:
+            QMessageBox.warning(self, 'Cảnh báo', f'Không tìm thấy bộ từ vựng "{set_name}" trong dữ liệu!')
     
     def start_flashcard_for_set(self, set_name):
         """Bắt đầu học từ vựng với flashcard cho bộ từ vựng cụ thể"""
@@ -647,43 +702,47 @@ class VocabularyApp(QMainWindow):
                                     QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
         
         if reply == QMessageBox.Yes:
+            # Kiểm tra xem set_name có phải là khóa đầy đủ không (có dạng "category::name")
             if set_name in self.vocabulary_sets:
-                # Lấy danh mục của bộ từ vựng
-                category = "Chung"
-                if isinstance(self.vocabulary_sets[set_name], dict) and 'category' in self.vocabulary_sets[set_name]:
-                    category = self.vocabulary_sets[set_name]['category']
+                # Trường hợp set_name chính là khóa đầy đủ
+                if "::" in set_name:
+                    category, actual_set_name = set_name.split("::", 1)
+                else:
+                    category = "Chung"
+                    actual_set_name = set_name
                 
-                # Xóa file
-                if self.data_manager.delete_vocab_set(set_name, category):
-                    # Xóa khỏi bộ nhớ
+                print(f"Xóa bộ từ vựng: category={category}, name={actual_set_name}")
+                
+                if self.data_manager.delete_vocab_set(actual_set_name, category):
                     del self.vocabulary_sets[set_name]
                     self.update_vocab_sets_list()
                     QMessageBox.information(self, 'Thành công', f'Đã xóa bộ từ vựng "{set_name}"')
                 else:
-                    QMessageBox.critical(self, 'Lỗi', f'Không thể xóa bộ từ vựng "{set_name}"')
-    
-    def export_vocab(self):
-        selected_items = self.vocab_sets_list.selectedItems()
-        if not selected_items:
-            QMessageBox.warning(self, 'Cảnh báo', 'Vui lòng chọn một bộ từ vựng để xuất!')
-            return
-        
-        # Lấy tên thật của bộ từ vựng từ UserRole
-        set_name = selected_items[0].data(Qt.UserRole)
-        
-        if set_name in self.vocabulary_sets:
-            file_path, _ = QFileDialog.getSaveFileName(self, "Lưu bộ từ vựng", 
-                                                    f"{set_name}.json", 
-                                                    "JSON Files (*.json)")
-            
-            if file_path:
-                try:
-                    with open(file_path, 'w', encoding='utf-8') as f:
-                        json.dump({set_name: self.vocabulary_sets[set_name]}, f, 
-                                ensure_ascii=False, indent=2)
-                    QMessageBox.information(self, 'Thành công', f'Đã xuất bộ từ vựng "{set_name}" thành công!')
-                except Exception as e:
-                    QMessageBox.critical(self, 'Lỗi', f'Lỗi khi xuất file: {str(e)}')
+                    QMessageBox.critical(self, 'Lỗi', f'Không thể xóa file bộ từ vựng "{set_name}"')
+            else:
+                # Trường hợp set_name không phải là khóa đầy đủ
+                found = False
+                for key in list(self.vocabulary_sets.keys()):
+                    if key.endswith(f"::{set_name}"):
+                        category = key.split("::", 1)[0]
+                        if self.data_manager.delete_vocab_set(set_name, category):
+                            del self.vocabulary_sets[key]
+                            found = True
+                            break
+                
+                if found:
+                    self.update_vocab_sets_list()
+                    QMessageBox.information(self, 'Thành công', f'Đã xóa bộ từ vựng "{set_name}"')
+                else:
+                    # Thử xóa từ tất cả các danh mục
+                    for category in self.categories:
+                        if self.data_manager.delete_vocab_set(set_name, category):
+                            self.vocabulary_sets = self.data_manager.load_all_data()
+                            self.update_vocab_sets_list()
+                            QMessageBox.information(self, 'Thành công', f'Đã xóa bộ từ vựng "{set_name}"')
+                            return
+                    
+                    QMessageBox.critical(self, 'Lỗi', f'Không tìm thấy bộ từ vựng "{set_name}" trong dữ liệu')
     
     def import_vocab(self):
         file_path, _ = QFileDialog.getOpenFileName(self, "Chọn file từ vựng", 
