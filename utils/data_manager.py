@@ -96,18 +96,22 @@ class DataManager:
     def get_categories(self):
         """Lấy danh sách các danh mục"""
         categories = []
-        if os.path.exists(self.categories_dir):
-            for item in os.listdir(self.categories_dir):
-                item_path = os.path.join(self.categories_dir, item)
-                if os.path.isdir(item_path):
-                    categories.append(item)
-        
-        # Đảm bảo luôn có danh mục "Chung"
-        if "Chung" not in categories:
-            os.makedirs(os.path.join(self.categories_dir, "Chung"), exist_ok=True)
-            categories.append("Chung")
-        
-        return sorted(categories)
+        try:
+            if os.path.exists(self.categories_dir):
+                for item in os.listdir(self.categories_dir):
+                    item_path = os.path.join(self.categories_dir, item)
+                    if os.path.isdir(item_path):
+                        categories.append(item)
+            
+            # Đảm bảo luôn có danh mục "Chung"
+            if "Chung" not in categories:
+                os.makedirs(os.path.join(self.categories_dir, "Chung"), exist_ok=True)
+                categories.append("Chung")
+            
+            return sorted(categories)
+        except Exception as e:
+            print(f"Lỗi khi lấy danh sách danh mục: {str(e)}")
+            return ["Chung"]  # Trả về danh mục mặc định nếu có lỗi
     
     def create_category(self, category_name):
         """Tạo danh mục mới"""

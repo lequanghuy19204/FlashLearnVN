@@ -6,7 +6,7 @@ from PyQt5.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
                             QMessageBox, QListWidget, QListWidgetItem, QFileDialog, QStackedWidget,
                             QToolButton, QSizePolicy, QFrame, QSpacerItem,
                             QTreeWidget, QTreeWidgetItem, QSplitter, QComboBox,
-                            QInputDialog, QMenu, QAction)
+                            QInputDialog, QMenu, QAction, QFormLayout)
 from PyQt5.QtCore import Qt, QSize, pyqtSignal
 from PyQt5.QtGui import QFont, QIcon, QPixmap
 import qtawesome as qta
@@ -25,46 +25,42 @@ class VocabularyApp(QMainWindow):
         self.initUI()
         
     def initUI(self):
+        """Khởi tạo giao diện người dùng"""
         # Thiết lập cửa sổ chính
-        self.setWindowTitle('FlashLearnVN')
-        self.setGeometry(100, 100, 400, 300)  # Giảm chiều cao xuống 300
+        self.setWindowTitle("FlashLearnVN - Ứng dụng học từ vựng")
+        self.setMinimumSize(400, 400)
         
-        # Sử dụng logo từ file nếu tồn tại, nếu không thì sử dụng qtawesome
-        logo_path = "ui/images/logo.ico"
-        if os.path.exists(logo_path):
-            self.setWindowIcon(QIcon(logo_path))
-        else:
-            self.setWindowIcon(QIcon(qta.icon('fa5s.book-open', color='#3498db').pixmap(64, 64)))
+        # Tạo widget trung tâm và layout chính
+        central_widget = QWidget()
+        self.setCentralWidget(central_widget)
+        main_layout = QVBoxLayout(central_widget)
         
-        # Widget trung tâm với StackedWidget để chuyển đổi giữa các trang
-        self.central_widget = QWidget()
-        self.setCentralWidget(self.central_widget)
-        
-        # Layout chính
-        main_layout = QVBoxLayout(self.central_widget)
-        main_layout.setContentsMargins(0, 0, 0, 0)
-        main_layout.setSpacing(0)
-        
-        # StackedWidget để chứa các trang
+        # Tạo stacked widget để chuyển đổi giữa các trang
         self.stacked_widget = QStackedWidget()
-        main_layout.addWidget(self.stacked_widget)
         
-        # Trang 1: Danh sách bộ từ vựng
+        # Tạo các trang
         self.main_page = QWidget()
-        self.setup_main_page()
-        self.stacked_widget.addWidget(self.main_page)
-        
-        # Trang 2: Thêm/Chỉnh sửa từ vựng
         self.edit_page = QWidget()
-        self.setup_edit_page()
-        self.stacked_widget.addWidget(self.edit_page)
-        
-        # Trang 3: Học từ vựng (Flashcard)
         self.flashcard_page = QWidget()
+        
+        # Thiết lập các trang
+        self.setup_edit_page()  # Gọi trước để khởi tạo category_combo
+        self.setup_main_page()
+        
+        # Thêm các trang vào stacked widget
+        self.stacked_widget.addWidget(self.main_page)
+        self.stacked_widget.addWidget(self.edit_page)
         self.stacked_widget.addWidget(self.flashcard_page)
         
-        # Hiển thị trang chính
+        # Thêm stacked widget vào layout chính
+        main_layout.addWidget(self.stacked_widget)
+        
+        # Hiển thị trang chính ban đầu
         self.stacked_widget.setCurrentIndex(0)
+        
+        # Cập nhật giao diện
+        self.update_category_tree()
+        self.update_vocab_sets_list()
         
     def setup_main_page(self):
         """Thiết lập trang chính với danh sách bộ từ vựng"""
@@ -78,7 +74,7 @@ class VocabularyApp(QMainWindow):
         # Panel bên trái - Danh mục
         left_panel = QFrame()
         left_panel.setStyleSheet("background-color: #f8f9fa;")
-        left_panel.setMaximumWidth(130)  # Giảm chiều rộng
+        left_panel.setMaximumWidth(200)  # Giảm chiều rộng
         left_panel_layout = QVBoxLayout(left_panel)
         left_panel_layout.setContentsMargins(1, 1, 1, 1)  # Giảm padding
         
@@ -185,97 +181,51 @@ class VocabularyApp(QMainWindow):
         self.update_vocab_sets_list()
     
     def setup_edit_page(self):
-        """Thiết lập trang chỉnh sửa từ vựng"""
-        layout = QVBoxLayout(self.edit_page)
-        layout.setSpacing(5)  # Giảm khoảng cách
-        layout.setContentsMargins(5, 5, 5, 5)  # Giảm margin
+        """Thiết lập trang thêm/chỉnh sửa từ vựng"""
+        edit_layout = QVBoxLayout(self.edit_page)
         
-        # Tiêu đề
-        title_label = QLabel("Thêm/Chỉnh sửa bộ từ vựng")
-        title_label.setAlignment(Qt.AlignCenter)
-        title_label.setFont(QFont("Segoe UI", 12, QFont.Bold))
-        title_label.setStyleSheet("color: #2c3e50; margin: 2px 0;")
-        layout.addWidget(title_label)
-        
-        # Form nhập liệu
-        form_frame = QFrame()
-        form_frame.setFrameShape(QFrame.StyledPanel)
-        form_frame.setStyleSheet("background-color: white; border-radius: 5px;")
-        form_layout = QVBoxLayout(form_frame)
-        form_layout.setSpacing(5)  # Giảm khoảng cách
-        form_layout.setContentsMargins(5, 5, 5, 5)  # Giảm margin
+        # Form layout cho tên bộ từ vựng và danh mục
+        form_layout = QFormLayout()
         
         # Tên bộ từ vựng
-        name_layout = QHBoxLayout()
-        name_label = QLabel("Tên bộ từ vựng:")
-        name_label.setFont(QFont("Segoe UI", 9))
-        name_layout.addWidget(name_label)
-        
         self.set_name_edit = QLineEdit()
         self.set_name_edit.setPlaceholderText("Nhập tên bộ từ vựng")
-        self.set_name_edit.setFont(QFont("Segoe UI", 9))
-        name_layout.addWidget(self.set_name_edit)
-        
-        form_layout.addLayout(name_layout)
+        form_layout.addRow("Tên bộ từ vựng:", self.set_name_edit)
         
         # Danh mục
-        category_layout = QHBoxLayout()
-        category_label = QLabel("Danh mục:")
-        category_label.setFont(QFont("Segoe UI", 9))
-        category_layout.addWidget(category_label)
-        
         self.category_combo = QComboBox()
-        self.category_combo.setFont(QFont("Segoe UI", 9))
-        category_layout.addWidget(self.category_combo)
+        self.update_category_combo()  # Cập nhật danh sách danh mục
+        form_layout.addRow("Danh mục:", self.category_combo)
         
-        form_layout.addLayout(category_layout)
+        edit_layout.addLayout(form_layout)
         
         # Hướng dẫn
-        instruction_label = QLabel(
-            "Nhập từ vựng theo định dạng sau:\n"
-            "Từ vựng\n"
-            "Nghĩa\n\n"
-            "Ví dụ:\n"
-            "hello\n"
-            "xin chào\n\n"
-            "Solar-powered light\n"
-            "Đèn hoạt động bằng năng lượng mặt trời\n\n"
-            "Lưu ý: Có thể cách nhau 1 dòng trống hoặc không cần dòng trống giữa các cặp từ vựng-nghĩa."
-        )
-        instruction_label.setStyleSheet("color: #7f8c8d; background-color: #f8f9fa; padding: 3px; border-radius: 3px; font-size: 8px;")
-        form_layout.addWidget(instruction_label)
+        instruction_label = QLabel("Nhập từ vựng theo định dạng: mỗi từ một dòng, nghĩa ở dòng tiếp theo, sau đó là dòng trống")
+        instruction_label.setWordWrap(True)
+        instruction_label.setStyleSheet("color: #7f8c8d; font-style: italic;")
+        edit_layout.addWidget(instruction_label)
         
-        # Nội dung từ vựng
-        vocab_label = QLabel("Nội dung từ vựng:")
-        vocab_label.setFont(QFont("Segoe UI", 9))
-        form_layout.addWidget(vocab_label)
-        
+        # Trình soạn thảo từ vựng
         self.vocab_edit = QTextEdit()
-        self.vocab_edit.setPlaceholderText("Nhập từ vựng ở đây...")
-        self.vocab_edit.setFont(QFont("Segoe UI", 9))
-        self.vocab_edit.setMinimumHeight(80)  # Giảm chiều cao tối thiểu
-        self.vocab_edit.setMaximumHeight(100)  # Giới hạn chiều cao tối đa
-        form_layout.addWidget(self.vocab_edit)
+        self.vocab_edit.setPlaceholderText("Ví dụ:\nhello\nxin chào\n\nworld\nthế giới")
+        edit_layout.addWidget(self.vocab_edit)
         
-        layout.addWidget(form_frame)
-        
-        # Các nút thao tác
-        buttons_layout = QHBoxLayout()
-        buttons_layout.setSpacing(5)  # Giảm khoảng cách
+        # Các nút
+        button_layout = QHBoxLayout()
         
         # Nút hủy
         self.cancel_button = QPushButton("Hủy")
-        self.cancel_button.setIcon(qta.icon('fa5s.times', color='white'))
+        self.cancel_button.setIcon(qta.icon('fa5s.times', color='#e74c3c'))
         self.cancel_button.clicked.connect(self.switch_to_main_page)
-        buttons_layout.addWidget(self.cancel_button)
+        button_layout.addWidget(self.cancel_button)
         
         # Nút lưu
         self.save_button = QPushButton("Lưu")
-        self.save_button.setIcon(qta.icon('fa5s.save', color='white'))
+        self.save_button.setIcon(qta.icon('fa5s.save', color='#2ecc71'))
         self.save_button.clicked.connect(self.add_vocabulary)
-        buttons_layout.addWidget(self.save_button)
+        button_layout.addWidget(self.save_button)
         
-        layout.addLayout(buttons_layout)
+        edit_layout.addLayout(button_layout)
     
     def create_tool_button(self, icon, text):
         """Tạo nút công cụ với icon và text"""
@@ -292,30 +242,53 @@ class VocabularyApp(QMainWindow):
         """Cập nhật cây danh mục"""
         self.category_tree.clear()
         
-        # Thêm mục "Tất cả"
-        all_item = QTreeWidgetItem(self.category_tree, ["Tất cả"])
+        # Thêm mục "Tất cả" vào đầu danh sách
+        all_item = QTreeWidgetItem(self.category_tree)
+        all_item.setText(0, "Tất cả")
         all_item.setIcon(0, qta.icon('fa5s.list', color='#3498db'))
         all_item.setData(0, Qt.UserRole, "all")
         
-        # Thêm các danh mục
+        # Thêm các danh mục vào cây
         for category in self.categories:
-            cat_item = QTreeWidgetItem(self.category_tree, [category])
-            cat_item.setIcon(0, qta.icon('fa5s.folder', color='#f39c12'))
-            cat_item.setData(0, Qt.UserRole, category)
+            category_item = QTreeWidgetItem(self.category_tree)
+            category_item.setText(0, category)
+            category_item.setIcon(0, qta.icon('fa5s.folder', color='#f39c12'))
+            category_item.setData(0, Qt.UserRole, category)
         
         # Mở rộng tất cả các mục
         self.category_tree.expandAll()
         
-        # Cập nhật danh mục trong combobox
-        self.update_category_combo()
+        # Chọn mục "Tất cả" mặc định
+        self.category_tree.setCurrentItem(all_item)
     
     def update_category_combo(self):
-        """Cập nhật combobox danh mục"""
-        if hasattr(self, 'category_combo'):
-            self.category_combo.clear()
-            self.category_combo.addItem("Không có danh mục")
-            for category in self.categories:
+        """Cập nhật danh sách danh mục trong combobox"""
+        # Kiểm tra xem category_combo đã được khởi tạo chưa
+        if not hasattr(self, 'category_combo'):
+            return
+        
+        # Lưu lại danh mục đang chọn
+        current_category = self.category_combo.currentText()
+        
+        # Xóa tất cả các mục hiện tại
+        self.category_combo.clear()
+        
+        # Thêm mục mặc định
+        self.category_combo.addItem("Chung")
+        
+        # Lấy danh sách danh mục từ data_manager
+        categories = self.data_manager.get_categories()
+        
+        # Thêm các danh mục vào combobox
+        for category in categories:
+            if category != "Chung":  # Đã thêm "Chung" ở trên
                 self.category_combo.addItem(category)
+        
+        # Chọn lại danh mục trước đó nếu có
+        if current_category:
+            index = self.category_combo.findText(current_category)
+            if index >= 0:
+                self.category_combo.setCurrentIndex(index)
     
     def update_vocab_sets_list(self, category=None):
         """Cập nhật danh sách bộ từ vựng"""
@@ -483,18 +456,27 @@ class VocabularyApp(QMainWindow):
             # Lấy dữ liệu từ vựng
             vocab_data = self.vocabulary_sets[set_name]
             
-            # Cập nhật danh sách danh mục
-            self.update_category_combo()
-            
-            # Điền thông tin vào form
-            self.set_name_edit.setText(set_name)
-            
-            # Chọn danh mục
-            if isinstance(vocab_data, dict) and 'category' in vocab_data:
-                category = vocab_data['category']
+            # Đảm bảo category_combo đã được khởi tạo
+            if hasattr(self, 'category_combo'):
+                # Cập nhật danh sách danh mục
+                self.update_category_combo()
+                
+                # Chọn danh mục
+                category = "Chung"  # Mặc định
+                if isinstance(vocab_data, dict) and 'category' in vocab_data:
+                    category = vocab_data['category']
+                
+                # Tìm và chọn danh mục trong combobox
                 index = self.category_combo.findText(category)
                 if index >= 0:
                     self.category_combo.setCurrentIndex(index)
+                else:
+                    # Nếu không tìm thấy danh mục, thêm vào combobox
+                    self.category_combo.addItem(category)
+                    self.category_combo.setCurrentText(category)
+            
+            # Điền thông tin vào form
+            self.set_name_edit.setText(set_name)
             
             # Chuyển đổi dữ liệu từ vựng thành văn bản
             vocab_text = ""
@@ -797,5 +779,9 @@ class VocabularyApp(QMainWindow):
         event.accept()
 
     def load_categories(self):
-        """Tải danh sách các danh mục"""
-        return self.data_manager.get_categories() 
+        """Tải danh sách danh mục từ data_manager"""
+        try:
+            return self.data_manager.get_categories()
+        except Exception as e:
+            print(f"Lỗi khi tải danh mục: {str(e)}")
+            return ["Chung"]  # Trả về danh mục mặc định nếu có lỗi 
