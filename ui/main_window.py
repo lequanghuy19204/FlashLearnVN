@@ -242,12 +242,6 @@ class VocabularyApp(QMainWindow):
         """Cập nhật cây danh mục"""
         self.category_tree.clear()
         
-        # Thêm mục "Tất cả" vào đầu danh sách
-        all_item = QTreeWidgetItem(self.category_tree)
-        all_item.setText(0, "Tất cả")
-        all_item.setIcon(0, qta.icon('fa5s.list', color='#3498db'))
-        all_item.setData(0, Qt.UserRole, "all")
-        
         # Thêm các danh mục vào cây
         for category in self.categories:
             category_item = QTreeWidgetItem(self.category_tree)
@@ -258,8 +252,12 @@ class VocabularyApp(QMainWindow):
         # Mở rộng tất cả các mục
         self.category_tree.expandAll()
         
-        # Chọn mục "Tất cả" mặc định
-        self.category_tree.setCurrentItem(all_item)
+        # Chọn mục "Chung" mặc định
+        for i in range(self.category_tree.topLevelItemCount()):
+            item = self.category_tree.topLevelItem(i)
+            if item.data(0, Qt.UserRole) == "Chung":
+                self.category_tree.setCurrentItem(item)
+                break
     
     def update_category_combo(self):
         """Cập nhật danh sách danh mục trong combobox"""
@@ -294,13 +292,19 @@ class VocabularyApp(QMainWindow):
         """Cập nhật danh sách bộ từ vựng"""
         self.vocab_sets_list.clear()
         
-        # Lọc bộ từ vựng theo danh mục nếu có
+        if category is None:
+            category = self.current_category
+        
+        # Lọc bộ từ vựng theo danh mục
         filtered_sets = {}
         for set_name, vocab_data in self.vocabulary_sets.items():
-            if category is None or category == "Tất cả":
-                filtered_sets[set_name] = vocab_data
-            elif isinstance(vocab_data, dict) and 'category' in vocab_data and vocab_data['category'] == category:
-                filtered_sets[set_name] = vocab_data
+            # Kiểm tra xem set_name có chứa thông tin danh mục không
+            if "::" in set_name:
+                set_category, actual_set_name = set_name.split("::", 1)
+                
+                if set_category == category:
+                    # Chỉ hiển thị bộ từ vựng thuộc danh mục được chọn
+                    filtered_sets[set_name] = vocab_data
         
         # Thêm các bộ từ vựng vào danh sách
         for set_name, vocab_data in filtered_sets.items():
@@ -311,15 +315,22 @@ class VocabularyApp(QMainWindow):
             elif isinstance(vocab_data, dict) and 'items' in vocab_data:
                 num_words = len(vocab_data['items'])
             
+            # Lấy tên hiển thị (bỏ tiền tố danh mục nếu có)
+            display_name = set_name
+            if "::" in set_name:
+                _, display_name = set_name.split("::", 1)
+            
             # Tạo item với tên bộ từ vựng và số từ
-            item = QListWidgetItem(f"{set_name} ({num_words} từ)")
+            item = QListWidgetItem(f"{display_name} ({num_words} từ)")
             item.setData(Qt.UserRole, set_name)  # Lưu tên thật của bộ từ vựng
             self.vocab_sets_list.addItem(item)
     
     def category_selected(self, item):
-        """Xử lý khi chọn danh mục"""
-        category = item.data(0, Qt.UserRole)
-        self.update_vocab_sets_list(category)
+        """Xử lý khi người dùng chọn danh mục"""
+        if item:
+            category = item.data(0, Qt.UserRole)
+            self.current_category = category
+            self.update_vocab_sets_list(category)
     
     def add_category(self):
         """Thêm danh mục mới"""
@@ -598,8 +609,13 @@ class VocabularyApp(QMainWindow):
             if hasattr(self, 'flashcard_widget'):
                 self.flashcard_widget.deleteLater()
             
-            # Tạo widget flashcard mới
-            self.flashcard_widget = FlashcardWidget(vocab_items)
+            # Lấy tên hiển thị của bộ từ vựng (loại bỏ tiền tố danh mục nếu có)
+            display_name = set_name
+            if "::" in set_name:
+                _, display_name = set_name.split("::", 1)
+            
+            # Tạo widget flashcard mới với tên bộ từ vựng
+            self.flashcard_widget = FlashcardWidget(vocab_items, set_name=display_name)
             
             # Kết nối tín hiệu back_to_main với phương thức switch_to_main_page
             self.flashcard_widget.back_to_main.connect(self.switch_to_main_page)

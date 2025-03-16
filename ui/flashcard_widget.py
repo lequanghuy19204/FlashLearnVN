@@ -14,13 +14,15 @@ class FlashcardWidget(QWidget):
     # Tín hiệu để thông báo khi muốn quay lại trang chính
     back_to_main = pyqtSignal()
     
-    def __init__(self, vocab_items, parent=None):
+    def __init__(self, vocab_items, parent=None, set_name="", category=""):
         super().__init__(parent)
         self.vocab_items = vocab_items
         self.current_index = 0
         self.show_meaning = False
         self.auto_play = False
         self.temp_dir = tempfile.mkdtemp()
+        self.set_name = set_name  # Lưu tên bộ từ vựng
+        self.category = category  # Lưu tên danh mục
         
         # Thời gian chờ mặc định (ms)
         self.wait_time_en = 3000  # 3 giây cho tiếng Anh
@@ -34,7 +36,7 @@ class FlashcardWidget(QWidget):
         self.timer.timeout.connect(self.auto_play_step)
         
         # Thiết lập kích thước tối thiểu
-        self.setMinimumSize(400, 300)
+        self.setMinimumSize(350, 300)
         
         self.initUI()
         self.update_card()
@@ -42,8 +44,8 @@ class FlashcardWidget(QWidget):
     def initUI(self):
         # Layout chính
         main_layout = QVBoxLayout(self)
-        main_layout.setSpacing(5)  # Giảm khoảng cách giữa các phần tử
-        main_layout.setContentsMargins(0, 0, 0, 0)  # Bỏ lề hoàn toàn
+        main_layout.setSpacing(3)
+        main_layout.setContentsMargins(0, 0, 0, 0)
         
         # Tạo scroll area để có thể cuộn khi cửa sổ nhỏ
         scroll_area = QScrollArea()
@@ -55,8 +57,20 @@ class FlashcardWidget(QWidget):
         # Widget chứa nội dung
         content_widget = QWidget()
         content_layout = QVBoxLayout(content_widget)
-        content_layout.setSpacing(5)  # Giảm khoảng cách giữa các phần tử
-        content_layout.setContentsMargins(5, 5, 5, 5)  # Giảm lề nội dung xuống mức tối thiểu
+        content_layout.setSpacing(3)
+        content_layout.setContentsMargins(3, 3, 3, 3) 
+        
+        # Tiêu đề bộ từ vựng
+        if self.set_name:
+            title_text = self.set_name
+            if self.category:
+                title_text = f"{self.category} - {self.set_name}"
+                
+            self.title_label = QLabel(title_text)
+            self.title_label.setAlignment(Qt.AlignCenter)
+            self.title_label.setFont(QFont("Segoe UI", 12, QFont.Bold))
+            self.title_label.setStyleSheet("color: #2c3e50; margin-bottom: 3px;")
+            content_layout.addWidget(self.title_label)
         
         # Thông tin thẻ
         self.info_label = QLabel(f"Thẻ 1/{len(self.vocab_items)}")
@@ -79,8 +93,8 @@ class FlashcardWidget(QWidget):
         """)
         
         card_layout = QVBoxLayout(self.card_frame)
-        card_layout.setContentsMargins(8, 8, 8, 8)  # Giảm lề
-        card_layout.setSpacing(5)  # Giảm khoảng cách
+        card_layout.setContentsMargins(5, 5, 5, 5)  # Giảm lề từ 8 xuống 5
+        card_layout.setSpacing(3)  # Giảm khoảng cách từ 5 xuống 3
         
         # Từ vựng
         self.word_label = QLabel()
@@ -131,7 +145,7 @@ class FlashcardWidget(QWidget):
             }
         """)
         card_control_layout = QHBoxLayout(card_control_group)
-        card_control_layout.setContentsMargins(3, 15, 3, 3)  # Giảm lề
+        card_control_layout.setContentsMargins(2, 12, 2, 2)
         
         # Nút điều khiển
         # Nút trước
@@ -168,7 +182,7 @@ class FlashcardWidget(QWidget):
             }
         """)
         audio_layout = QHBoxLayout(audio_group)
-        audio_layout.setContentsMargins(3, 15, 3, 3)  # Giảm lề
+        audio_layout.setContentsMargins(2, 12, 2, 2) 
         
         # Nút đọc từ
         self.speak_word_button = self.create_tool_button(qta.icon('fa5s.volume-up', color='white'), "Đọc từ")
@@ -204,8 +218,8 @@ class FlashcardWidget(QWidget):
             }
         """)
         time_settings_layout = QFormLayout(time_settings_group)
-        time_settings_layout.setContentsMargins(3, 15, 3, 3)  # Giảm lề
-        time_settings_layout.setVerticalSpacing(3)  # Giảm khoảng cách dọc
+        time_settings_layout.setContentsMargins(2, 12, 2, 2)  # Giảm lề từ (3, 15, 3, 3) xuống (2, 12, 2, 2)
+        time_settings_layout.setVerticalSpacing(2)  # Giảm khoảng cách dọc từ 3 xuống 2
         
         # Thời gian chờ tiếng Anh
         en_time_layout = QHBoxLayout()
@@ -260,7 +274,7 @@ class FlashcardWidget(QWidget):
         """Tạo nút công cụ với biểu tượng và tooltip"""
         button = QToolButton()
         button.setIcon(icon)
-        button.setIconSize(QSize(20, 20))  # Giảm kích thước biểu tượng
+        button.setIconSize(QSize(16, 16))  # Giảm kích thước biểu tượng từ 20 xuống 16
         button.setToolTip(tooltip)
         button.setCursor(Qt.PointingHandCursor)
         button.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
@@ -269,7 +283,7 @@ class FlashcardWidget(QWidget):
                 background-color: #3498db;
                 border: none;
                 border-radius: 4px;
-                padding: 5px;
+                padding: 3px;  /* Giảm padding từ 5px xuống 3px */
             }
             QToolButton:hover {
                 background-color: #2980b9;

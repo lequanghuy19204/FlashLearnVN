@@ -76,6 +76,17 @@ class DataManager:
         
         return vocabulary_sets
     
+    def get_category_sets(self, category):
+        """Lấy tất cả bộ từ vựng trong một danh mục cụ thể"""
+        category_sets = {}
+        all_sets = self.load_all_data()
+        
+        for set_key, set_data in all_sets.items():
+            if set_key.startswith(f"{category}::"):
+                category_sets[set_key] = set_data
+        
+        return category_sets
+    
     def save_vocab_set(self, set_name, vocab_data, category="Chung"):
         """Lưu bộ từ vựng vào file JSON trong thư mục danh mục"""
         # Đảm bảo thư mục danh mục tồn tại
